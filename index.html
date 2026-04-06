@@ -1,89 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
+  <title>Nokia Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nokia 105 Test</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 16px;
-      line-height: 1.5;
-      word-wrap: break-word;
-    }
-    button {
-      font-size: 16px;
-      padding: 10px 14px;
-      margin: 8px 0;
-    }
-    .box {
-      border: 1px solid #999;
-      padding: 10px;
-      margin-top: 10px;
-    }
-  </style>
 </head>
+
 <body>
-  <h1>Nokia 105 Test</h1>
 
-  <p>This page tests:</p>
-  <ol>
-    <li>Basic JavaScript</li>
-    <li>Geolocation</li>
-  </ol>
+<h2>Basic Tests</h2>
 
-  <div class="box" id="js-result">
-    JavaScript test not run yet.
-  </div>
+<div id="js">JS not tested yet</div>
+<button onclick="testJS()">Run JS</button>
 
-  <button type="button" onclick="runJsTest()">Run JavaScript Test</button>
+<hr>
 
-  <div class="box" id="geo-result">
-    Geolocation not requested yet.
-  </div>
+<div id="geo">Geo not tested yet</div>
+<button onclick="testGeo()">Get Location</button>
 
-  <button type="button" onclick="getLocation()">Get My Location</button>
+<hr>
 
-  <script>
-    function runJsTest() {
-      var now = new Date();
-      document.getElementById('js-result').innerHTML =
-        'JavaScript works.<br>' +
-        'Current time from JS: ' + now.toString();
+<div id="xhr">XHR not tested yet</div>
+<button onclick="testXHR()">Call API</button>
+
+<script>
+function testJS() {
+  var d = new Date();
+  document.getElementById("js").innerHTML =
+    "JS works<br>" + d.toString();
+}
+
+function testGeo() {
+  var el = document.getElementById("geo");
+
+  if (!navigator.geolocation) {
+    el.innerHTML = "Geolocation NOT supported";
+    return;
+  }
+
+  el.innerHTML = "Getting location...";
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      el.innerHTML =
+        "Lat: " + pos.coords.latitude + "<br>" +
+        "Lon: " + pos.coords.longitude;
+    },
+    function(err) {
+      el.innerHTML = "Geo error: " + err.code;
     }
+  );
+}
 
-    function getLocation() {
-      var out = document.getElementById('geo-result');
+function testXHR() {
+  var el = document.getElementById("xhr");
+  el.innerHTML = "Sending request...";
 
-      if (!navigator.geolocation) {
-        out.innerHTML = 'Geolocation API is not supported on this browser/phone.';
-        return;
+  var xhr = new XMLHttpRequest();
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        el.innerHTML =
+          "Response:<br>" + xhr.responseText;
+      } else {
+        el.innerHTML =
+          "Request failed. Status: " + xhr.status;
       }
-
-      out.innerHTML = 'Trying to get location...';
-
-      navigator.geolocation.getCurrentPosition(
-        function (position) {
-          out.innerHTML =
-            'Latitude: ' + position.coords.latitude + '<br>' +
-            'Longitude: ' + position.coords.longitude + '<br>' +
-            'Accuracy: ' + position.coords.accuracy + ' meters';
-        },
-        function (error) {
-          var msg = 'Unknown error';
-          if (error.code === 1) msg = 'Permission denied';
-          if (error.code === 2) msg = 'Position unavailable';
-          if (error.code === 3) msg = 'Request timed out';
-
-          out.innerHTML = 'Failed to get location: ' + msg;
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      );
     }
-  </script>
+  };
+
+  try {
+    xhr.open("GET", "https://api.ipify.org?format=json", true);
+    xhr.send();
+  } catch (e) {
+    el.innerHTML = "XHR exception: " + e;
+  }
+}
+</script>
+
 </body>
 </html>
