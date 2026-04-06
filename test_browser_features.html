@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Nokia Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+
+<h2>Basic Tests</h2>
+
+<h3>Emojis</h3>
+<div id="emojis">
+Emojis: 😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 🥰 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔
+</div>
+
+
+<h3>JS</h3>
+<div id="js">JS not tested yet</div>
+<button onclick="testJS()">Run JS</button>
+
+<hr>
+
+<h3>Geolocation</h3>
+<div id="geo">Geo not tested yet</div>
+<button onclick="testGeo()">Get Location</button>
+
+<hr>
+
+<h3>XHR</h3>
+<div id="xhr">XHR not tested yet</div>
+<button onclick="testXHR()">Call API</button>
+
+<script>
+function testJS() {
+  var d = new Date();
+  document.getElementById("js").innerHTML =
+    "JS works<br>" + d.toString();
+}
+
+function testGeo() {
+  var el = document.getElementById("geo");
+
+  if (!navigator.geolocation) {
+    el.innerHTML = "Geolocation NOT supported";
+    return;
+  }
+
+  el.innerHTML = "Getting location...";
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      el.innerHTML =
+        "Lat: " + pos.coords.latitude + "<br>" +
+        "Lon: " + pos.coords.longitude;
+    },
+    function(err) {
+      el.innerHTML = "Geo error: " + err.code;
+    }
+  );
+}
+
+function testXHR() {
+  var el = document.getElementById("xhr");
+  el.innerHTML = "Sending request...";
+
+  var xhr = new XMLHttpRequest();
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        el.innerHTML =
+          "Response:<br>" + xhr.responseText;
+      } else {
+        el.innerHTML =
+          "Request failed. Status: " + xhr.status;
+      }
+    }
+  };
+
+  try {
+    xhr.open("GET", "https://api.ipify.org?format=json", true);
+    xhr.send();
+  } catch (e) {
+    el.innerHTML = "XHR exception: " + e;
+  }
+}
+</script>
+
+</body>
+</html>

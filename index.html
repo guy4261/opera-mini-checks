@@ -2,90 +2,159 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Nokia Test</title>
+  <title>Weather</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; font-size: 12px; margin: 4px; }
+    h2 { font-size: 14px; margin: 4px 0; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #999; padding: 2px 4px; text-align: center; font-size: 11px; }
+    th { background: #ddd; }
+    .now { background: #cfc; font-weight: bold; }
+    .past { color: #666; }
+    .icon { width: 16px; height: 16px; vertical-align: middle; }
+    #err { color: red; }
+  </style>
 </head>
-
 <body>
 
-<h2>Basic Tests</h2>
-
-<h3>Emojis</h3>
-<div id="emojis">
-Emojis: 😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 🥰 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔
-</div>
-
-
-<h3>JS</h3>
-<div id="js">JS not tested yet</div>
-<button onclick="testJS()">Run JS</button>
-
-<hr>
-
-<h3>Geolocation</h3>
-<div id="geo">Geo not tested yet</div>
-<button onclick="testGeo()">Get Location</button>
-
-<hr>
-
-<h3>XHR</h3>
-<div id="xhr">XHR not tested yet</div>
-<button onclick="testXHR()">Call API</button>
+<h2>Givatayim Weather</h2>
+<div id="status">Loading...</div>
+<div id="err"></div>
+<div id="weather"></div>
 
 <script>
-function testJS() {
-  var d = new Date();
-  document.getElementById("js").innerHTML =
-    "JS works<br>" + d.toString();
+var LAT = 32.0763; // °N
+var LON = 34.8054; // °E
+
+function wmoIcon(code) {
+  // Return simple text label for weather code
+  if (code === 0) return "Clear";
+  if (code === 1) return "Mostly Clear";
+  if (code === 2) return "Partly Cloudy";
+  if (code === 3) return "Overcast";
+  if (code === 45 || code === 48) return "Fog";
+  if (code === 51 || code === 53 || code === 55) return "Drizzle";
+  if (code === 61 || code === 63 || code === 65) return "Rain";
+  if (code === 71 || code === 73 || code === 75) return "Snow";
+  if (code === 80 || code === 81 || code === 82) return "Showers";
+  if (code === 95 || code === 96 || code === 99) return "Storm";
+  return "?";
 }
 
-function testGeo() {
-  var el = document.getElementById("geo");
+function wmoSVG(code) {
+  // Tiny inline SVG icons
+  var c = "#fc0", bg = "#9cf";
+  if (code === 0) {
+    // sun
+    return '<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="' + c + '"/></svg>';
+  }
+  if (code <= 2) {
+    // sun + cloud
+    return '<svg class="icon" viewBox="0 0 16 16"><circle cx="6" cy="5" r="3" fill="' + c + '"/><ellipse cx="9" cy="10" rx="5" ry="3" fill="#ccc"/></svg>';
+  }
+  if (code === 3) {
+    // cloud
+    return '<svg class="icon" viewBox="0 0 16 16"><ellipse cx="8" cy="9" rx="6" ry="4" fill="#aaa"/></svg>';
+  }
+  if (code >= 51 && code <= 65 || code >= 80 && code <= 82) {
+    // rain
+    return '<svg class="icon" viewBox="0 0 16 16"><ellipse cx="8" cy="6" rx="6" ry="3" fill="#aaa"/><line x1="5" y1="11" x2="4" y2="14" stroke="' + bg + '" stroke-width="1.5"/><line x1="8" y1="11" x2="7" y2="14" stroke="' + bg + '" stroke-width="1.5"/><line x1="11" y1="11" x2="10" y2="14" stroke="' + bg + '" stroke-width="1.5"/></svg>';
+  }
+  if (code >= 95) {
+    // storm
+    return '<svg class="icon" viewBox="0 0 16 16"><ellipse cx="8" cy="5" rx="6" ry="3" fill="#888"/><polygon points="8,8 6,12 9,11 7,15" fill="' + c + '"/></svg>';
+  }
+  // fallback: cloud
+  return '<svg class="icon" viewBox="0 0 16 16"><ellipse cx="8" cy="9" rx="6" ry="4" fill="#bbb"/></svg>';
+}
 
-  if (!navigator.geolocation) {
-    el.innerHTML = "Geolocation NOT supported";
-    return;
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+function loadWeather() {
+  var now = new Date();
+  var past = new Date(now.getTime() - 24 * 3600 * 1000);
+  var future = new Date(now.getTime() + 24 * 3600 * 1000);
+
+  function fmt(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   }
 
-  el.innerHTML = "Getting location...";
-
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      el.innerHTML =
-        "Lat: " + pos.coords.latitude + "<br>" +
-        "Lon: " + pos.coords.longitude;
-    },
-    function(err) {
-      el.innerHTML = "Geo error: " + err.code;
-    }
-  );
-}
-
-function testXHR() {
-  var el = document.getElementById("xhr");
-  el.innerHTML = "Sending request...";
+  var url = "https://api.open-meteo.com/v1/forecast"
+    + "?latitude=" + LAT
+    + "&longitude=" + LON
+    + "&hourly=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m"
+    + "&start_date=" + fmt(past)
+    + "&end_date=" + fmt(future)
+    + "&timezone=Asia%2FJerusalem";
 
   var xhr = new XMLHttpRequest();
-
   xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        el.innerHTML =
-          "Response:<br>" + xhr.responseText;
-      } else {
-        el.innerHTML =
-          "Request failed. Status: " + xhr.status;
-      }
+    if (xhr.readyState !== 4) return;
+    if (xhr.status !== 200) {
+      document.getElementById("err").innerHTML = "Error: " + xhr.status;
+      document.getElementById("status").innerHTML = "";
+      return;
     }
+    try {
+      var data = JSON.parse(xhr.responseText);
+      render(data, now);
+    } catch (e) {
+      document.getElementById("err").innerHTML = "Parse error: " + e;
+    }
+    document.getElementById("status").innerHTML = "";
   };
 
   try {
-    xhr.open("GET", "https://api.ipify.org?format=json", true);
+    xhr.open("GET", url, true);
     xhr.send();
   } catch (e) {
-    el.innerHTML = "XHR exception: " + e;
+    document.getElementById("err").innerHTML = "XHR error: " + e;
+    document.getElementById("status").innerHTML = "";
   }
 }
+
+function render(data, now) {
+  var h = data.hourly;
+  var times = h.time;
+  var temps = h.temperature_2m;
+  var codes = h.weather_code;
+  var humid = h.relative_humidity_2m;
+  var wind = h.wind_speed_10m;
+
+  var nowH = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) + "T" + pad(now.getHours()) + ":00";
+
+  // Find the range: 24h before now to 24h after
+  var nowIdx = -1;
+  for (var i = 0; i < times.length; i++) {
+    if (times[i] === nowH) { nowIdx = i; break; }
+  }
+
+  var html = '<table><tr><th>Time</th><th></th><th>C</th><th>Hum</th><th>Wind</th></tr>';
+
+  for (var i = 0; i < times.length; i++) {
+    var t = times[i];
+    var hr = t.substring(11, 16);
+    var day = t.substring(5, 10);
+    var label = day + " " + hr;
+    var cls = "";
+    if (i === nowIdx) cls = "now";
+    else if (i < nowIdx || (nowIdx === -1 && i < times.length / 2)) cls = "past";
+
+    html += '<tr class="' + cls + '">'
+      + '<td>' + label + '</td>'
+      + '<td>' + wmoSVG(codes[i]) + '</td>'
+      + '<td>' + Math.round(temps[i]) + '</td>'
+      + '<td>' + humid[i] + '%</td>'
+      + '<td>' + Math.round(wind[i]) + '</td>'
+      + '</tr>';
+  }
+
+  html += '</table>';
+  document.getElementById("weather").innerHTML = html;
+}
+
+loadWeather();
 </script>
 
 </body>
