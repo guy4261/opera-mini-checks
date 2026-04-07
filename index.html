@@ -71,29 +71,40 @@ function wmoSVG(code) {
 
 function pad(n) { return n < 10 ? "0" + n : "" + n; }
 
+function fmt(dt) {
+  const pad = (n) => String(n).padStart(2, '0');
+
+  const year = dt.getFullYear();
+  const month = pad(dt.getMonth() + 1); // months are 0-based
+  const day = pad(dt.getDate());
+
+  const hours = pad(dt.getHours());
+  const minutes = pad(dt.getMinutes());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 function loadWeather() {
   var now = new Date();
-  var past = new Date(now.getTime() - 24 * 3600 * 1000);
+  var past = now; // new Date(now.getTime() - 24 * 3600 * 1000);
   var future = new Date(now.getTime() + 24 * 3600 * 1000);
-
-  function fmt(d) {
-    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-  }
 
   var url = "https://api.open-meteo.com/v1/forecast"
     + "?latitude=" + LAT
     + "&longitude=" + LON
     + "&hourly=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m"
-    + "&start_date=" + fmt(past)
-    + "&end_date=" + fmt(future)
+    + "&start_hour=" + fmt(past)
+    + "&end_hour=" + fmt(future)
     + "&timezone=Asia%2FJerusalem";
+
+  document.getElementById("status").innerHTML = `<a href="${url}">Loading...</a>`
 
   var xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function() {
     if (xhr.readyState !== 4) return;
     if (xhr.status !== 200) {
-      document.getElementById("err").innerHTML = "Error: " + xhr.status;
-      document.getElementById("status").innerHTML = "";
+      document.getElementById("err").innerHTML = `Error: ${xhr.responseText}`;
+      document.getElementById("status").innerHTML = `Status: ${xhr.status}`;
       return;
     }
     try {
@@ -130,7 +141,7 @@ function render(data, now) {
     if (times[i] === nowH) { nowIdx = i; break; }
   }
 
-  var html = '<table><tr><th>Time</th><th></th><th>C</th><th>Hum</th><th>Wind</th></tr>';
+  var html = '<table><tr><th>Time</th><th></th><th>C</th></tr>'; // <th>Hum</th><th>Wind</th>
 
   for (var i = 0; i < times.length; i++) {
     var t = times[i];
@@ -145,8 +156,8 @@ function render(data, now) {
       + '<td>' + label + '</td>'
       + '<td>' + wmoSVG(codes[i]) + '</td>'
       + '<td>' + Math.round(temps[i]) + '</td>'
-      + '<td>' + humid[i] + '%</td>'
-      + '<td>' + Math.round(wind[i]) + '</td>'
+      // + '<td>' + humid[i] + '%</td>'
+      // + '<td>' + Math.round(wind[i]) + '</td>'
       + '</tr>';
   }
 
@@ -156,6 +167,43 @@ function render(data, now) {
 
 loadWeather();
 </script>
+
+<!--
+<br/>
+<hr/>
+<div id="ipgeo">IP location not tested yet</div>
+<button onclick="testIPGeo()">Get Location via IP</button>
+
+<script>
+function testIPGeo() {
+  var el = document.getElementById("ipgeo");
+  el.innerHTML = "Requesting IP location...";
+
+  var xhr = new XMLHttpRequest();
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          el.innerHTML =
+            "City: " + data.city + "<br>" +
+            "Lat: " + data.latitude + "<br>" +
+            "Lon: " + data.longitude;
+        } catch (e) {
+          el.innerHTML = "Parse error";
+        }
+      } else {
+        el.innerHTML = "Request failed: " + xhr.status;
+      }
+    }
+  };
+
+  xhr.open("GET", "https://ipapi.co/json/", true);
+  xhr.send();
+}
+</script>
+-->
 
 </body>
 </html>
